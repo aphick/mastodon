@@ -32,33 +32,18 @@ class Instance < ApplicationRecord
     @delivery_failure_tracker ||= DeliveryFailureTracker.new(domain)
   end
 
-  def following_count
-    @following_count ||= Follow.where(account: accounts).count
+  def unavailable?
+    unavailable_domain.present?
   end
 
-  def followers_count
-    @followers_count ||= Follow.where(target_account: accounts).count
+  def purgeable?
+    unavailable? || suspend? || !accounts.exists?
   end
 
-  def reports_count
-    @reports_count ||= Report.where(target_account: accounts).count
-  end
-
-  def blocks_count
-    @blocks_count ||= Block.where(target_account: accounts).count
-  end
-
-  def public_comment
-    domain_block&.public_comment
-  end
-
-  def private_comment
-    domain_block&.private_comment
-  end
-
-  def media_storage
-    @media_storage ||= MediaAttachment.where(account: accounts).sum(:file_file_size)
-  end
+  delegate :public_comment,
+           :private_comment,
+           :suspend?,
+           to: :domain_block, allow_nil: true
 
   def to_param
     domain
